@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
+import { CupSoda, DollarSign, Flame, Gift, MapPin, MessageCircle, QrCode, Sparkles } from 'lucide-react'
+import gemaVitaFooterLogo from './assets/gema-vita-footer-logo.webp'
+import gemaVitaHeaderLogo from './assets/gema-vita-header-logo.webp'
 import gemaVitaLogo from './assets/gema-vita-logo.webp'
+import cardFrango from './assets/card-frango.webp'
+import cardCarne from './assets/card-carne.webp'
+import cardFrangoQueijo from './assets/card-frango-queijo.webp'
+import cardCarneQueijo from './assets/card-carne-queijo.webp'
 import './App.css'
 
 type Flavor = 'carne_com_queijo' | 'frango_com_queijo' | 'carne' | 'frango'
@@ -100,11 +107,11 @@ type Store = {
   rewards: Reward[]
 }
 
-const FLAVORS: { value: Flavor; label: string; price: number; desc: string }[] = [
-  { value: 'carne_com_queijo', label: 'Carne com queijo', price: 15, desc: 'Omelete completo, cremoso e bem reforçado.' },
-  { value: 'frango_com_queijo', label: 'Frango com queijo', price: 15, desc: 'Frango temperado, queijo derretido e suco incluso.' },
-  { value: 'carne', label: 'Carne', price: 10, desc: 'Sabor clássico, quente e prático para a rotina.' },
-  { value: 'frango', label: 'Frango', price: 10, desc: 'Leve, proteico e pronto para acompanhar seu dia.' },
+const FLAVORS: { value: Flavor; label: string; price: number; desc: string; image: string; badge: string }[] = [
+  { value: 'frango', label: 'Frango', price: 10, desc: 'Leve, proteico e pronto para acompanhar seu dia.', image: cardFrango, badge: 'Padrão' },
+  { value: 'carne', label: 'Carne', price: 10, desc: 'Sabor clássico, quente e prático para a rotina.', image: cardCarne, badge: 'Padrão' },
+  { value: 'frango_com_queijo', label: 'Frango com queijo', price: 15, desc: 'Frango temperado, queijo derretido e suco incluso.', image: cardFrangoQueijo, badge: 'Plus' },
+  { value: 'carne_com_queijo', label: 'Carne com queijo', price: 15, desc: 'Omelete completo, cremoso e bem reforçado.', image: cardCarneQueijo, badge: 'Plus' },
 ]
 
 const REGIONS = ['Centro', 'Boa Vista', 'Derby', 'Madalena', 'Casa Forte', 'Outro']
@@ -124,6 +131,7 @@ const MOTIVATIONAL_MESSAGES = [
   'Continue acompanhando. Novas vantagens podem aparecer nos próximos produtos.',
   'Sua opinião tem valor e ajuda a Gema Vita a crescer com mais sabor e cuidado.',
 ]
+const HERO_WORDS = ['Energia', 'Vitalidade', 'Nutrição', 'Suculência']
 const WHATSAPP = '5581999999999'
 const STORE_KEY = 'gema-vita-mvp-store'
 
@@ -254,10 +262,50 @@ function useRoute() {
   return { path: window.location.pathname, params: new URLSearchParams(window.location.search), locationKey, go }
 }
 
+function useTypewriter(words: string[]) {
+  const [wordIndex, setWordIndex] = useState(0)
+  const [letterCount, setLetterCount] = useState(0)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    const currentWord = words[wordIndex]
+    const isWordComplete = !isDeleting && letterCount === currentWord.length
+    const isWordDeleted = isDeleting && letterCount === 0
+    const delay = isWordComplete ? 1250 : isWordDeleted ? 260 : isDeleting ? 58 : 95
+
+    const timer = window.setTimeout(() => {
+      if (isWordComplete) {
+        setIsDeleting(true)
+        return
+      }
+      if (isWordDeleted) {
+        setIsDeleting(false)
+        setWordIndex((current) => (current + 1) % words.length)
+        return
+      }
+      setLetterCount((current) => current + (isDeleting ? -1 : 1))
+    }, delay)
+
+    return () => window.clearTimeout(timer)
+  }, [isDeleting, letterCount, wordIndex, words])
+
+  return words[wordIndex].slice(0, letterCount)
+}
+
 function App() {
   const data = useStore()
   const route = useRoute()
   const [lastResult, setLastResult] = useState<{ reward: Reward | null; points: number; message: string } | null>(null)
+  const [showFloat, setShowFloat] = useState(false)
+
+  useEffect(() => {
+    function onScroll() {
+      setShowFloat(window.scrollY > window.innerHeight * 0.6)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const pageProps = { ...data, go: route.go, setLastResult }
   const path = route.path
@@ -276,8 +324,8 @@ function App() {
       <PublicHeader go={route.go} />
       <main>{page}</main>
       {!path.startsWith('/admin') && <PublicFooter go={route.go} />}
-      <a className="whatsapp-float" href={whatsAppLink('Olá! Quero falar com a Gema Vita.')} target="_blank" rel="noreferrer">
-        WhatsApp
+      <a className={`whatsapp-float${showFloat ? ' visible' : ''}`} href={whatsAppLink('Olá! Quero falar com a Gema Vita.')} target="_blank" rel="noreferrer">
+        <MessageCircle size={22} strokeWidth={2.4} /><span className="float-label">WhatsApp</span>
       </a>
     </>
   )
@@ -287,8 +335,8 @@ function PublicHeader({ go }: { go: (path: string) => void }) {
   return (
     <header className="topbar">
       <button className="brand" onClick={() => go('/')} aria-label="Ir para início">
-        <img className="brand-logo" src={gemaVitaLogo} alt="" />
-        <span><strong>Gema Vita</strong><small>nutrição que acompanha seu ritmo</small></span>
+        <img className="brand-logo" src={gemaVitaHeaderLogo} alt="" />
+        <span><strong>Gema Vita</strong><small>omelete artesanal + suco</small></span>
       </button>
       <nav>
         <button onClick={() => go('/cardapio')}>Cardápio</button>
@@ -303,9 +351,12 @@ function PublicHeader({ go }: { go: (path: string) => void }) {
 function PublicFooter({ go }: { go: (path: string) => void }) {
   return (
     <footer className="footer">
-      <div>
-        <strong>Gema Vita</strong>
-        <p>Omeletes artesanais, quentes e prontos para acompanhar sua rotina.</p>
+      <div className="footer-brand-block">
+        <img className="footer-logo" src={gemaVitaFooterLogo} alt="Gema Vita" />
+        <div>
+          <strong>Gema Vita</strong>
+          <p>Omeletes artesanais, quentes e prontos para acompanhar sua rotina.</p>
+        </div>
       </div>
       <div className="footer-actions">
         <button onClick={() => go('/cardapio')}>Ver cardápio</button>
@@ -325,11 +376,12 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
 
 function HomePage({ store, go }: { store: Store; go: (path: string) => void }) {
   const metrics = getMetrics(store)
+  const heroWord = useTypewriter(HERO_WORDS)
   const benefits = [
-    { title: 'Sai quente', text: 'Preparo rápido para café, almoço leve ou pausa no trabalho.', icon: '♨' },
-    { title: 'Feito de verdade', text: 'Omeletes artesanais, recheados e pensados para rotina corrida.', icon: '✦' },
-    { title: 'Suco incluso', text: 'Combo simples, completo e fácil de pedir sem surpresa no preço.', icon: '◐' },
-    { title: 'QR com vantagem', text: 'Cada embalagem vira pontos, feedback e chance de recompensa.', icon: '⌁' },
+    { title: 'Feito na hora!', text: 'Omeletes artesanais preparados no ritmo do pedido, com recheio generoso.', icon: Sparkles },
+    { title: 'Sai quente', text: 'Preparo rápido para café, almoço leve ou pausa no trabalho.', icon: Flame },
+    { title: 'Suco incluso', text: 'Combo simples, completo e fácil de pedir sem surpresa no preço.', icon: CupSoda },
+    { title: 'QR com vantagem', text: 'Cada embalagem vira pontos, feedback e chance de recompensa.', icon: QrCode },
   ]
 
   return (
@@ -337,28 +389,27 @@ function HomePage({ store, go }: { store: Store; go: (path: string) => void }) {
       <section className="hero-section home-hero">
         <div className="hero-copy">
           <span className="eyebrow">Omelete artesanal + suco incluso</span>
-          <h1>Comida de verdade, pronta para o ritmo da sua manhã.</h1>
+          <h1><span className="hero-dynamic-word">{heroWord}</span><span className="hero-fixed-line">na hora certa do seu dia.</span></h1>
           <p>Gema Vita transforma omeletes quentes em uma experiência prática, nutritiva e rastreável: peça pelo WhatsApp, escaneie o QR da embalagem e acumule vantagens.</p>
-          <div className="hero-tags" aria-label="Destaques da Gema Vita">
-            <span>Entrega local</span>
-            <span>A partir de {money(10)}</span>
-            <span>Feedback em 30s</span>
-          </div>
           <div className="actions">
             <Button onClick={() => go('/cardapio')}>Ver cardápio</Button>
             <Button variant="secondary" onClick={() => window.open(whatsAppLink('Olá! Quero pedir uma Gema Vita.'), '_blank')}>Pedir no WhatsApp</Button>
           </div>
         </div>
         <div className="hero-plate" aria-hidden="true">
-          <div className="hero-orbit orbit-one">+20 pts</div>
+          <div className="hero-orbit orbit-one"><QrCode size={14} strokeWidth={2.6} /> QR Code +20 pts</div>
           <img src={gemaVitaLogo} alt="" />
-          <strong>nutrição que acompanha seu ritmo</strong>
-          <div className="hero-orbit orbit-two">suco incluso</div>
+          <div className="juice-badge"><CupSoda size={18} strokeWidth={2.6} /><span>Suco incluso</span></div>
+          <div className="hero-orbit badge-local"><MapPin size={14} strokeWidth={2.6} /> Entrega local</div>
+          <div className="hero-orbit badge-preco"><DollarSign size={14} strokeWidth={2.6} /> A partir de {money(10)}</div>
         </div>
       </section>
 
       <section className="grid four benefits-grid" aria-label="Benefícios">
-        {benefits.map((item) => <Card key={item.title} className="benefit-card"><span>{item.icon}</span><h3>{item.title}</h3><p>{item.text}</p></Card>)}
+        {benefits.map((item) => {
+          const Icon = item.icon
+          return <Card key={item.title} className="benefit-card"><span><Icon size={20} strokeWidth={2.4} /></span><h3>{item.title}</h3><p>{item.text}</p></Card>
+        })}
       </section>
 
       <section className="section-heading split-heading"><div><span className="eyebrow">Cardápio enxuto</span><h2>Escolha seu recheio favorito.</h2></div><p>Todos acompanham suco e uma experiência rápida de fidelidade pelo QR da embalagem.</p></section>
@@ -397,10 +448,13 @@ function HomePage({ store, go }: { store: Store; go: (path: string) => void }) {
 function ProductGrid() {
   return (
     <section className="grid products">
-      {FLAVORS.map((product, index) => (
+      {FLAVORS.map((product) => (
         <Card key={product.value} className="product-card">
-          <span className="product-icon">{index < 2 ? '🥚' : '🍳'}</span>
-          <div>
+          <div className="product-card-head">
+            <img className="product-image" src={product.image} alt={product.label} loading="lazy" />
+            <span className="product-badge">{product.badge}</span>
+          </div>
+          <div className="product-card-body">
             <h3>{product.label}</h3>
             <p>{product.desc}</p>
           </div>
@@ -455,7 +509,7 @@ function AdvantagesPage({ store, update, params, go }: { store: Store; update: (
     <div className="page narrow qr-page">
       <Card>
         <span className="reward-badge">vantagem desbloqueada</span>
-        <h1>Você desbloqueou uma vantagem Gema Vita 💛</h1>
+        <h1>Você desbloqueou uma vantagem Gema Vita</h1>
         <p>Responda rapidinho e participe das vantagens de hoje. Leva menos de 30 segundos.</p>
         <div className="qr-summary">
           <span>Produto {product}</span><span>Lote {batch}</span><span>{flavorLabel(flavor)}</span>
@@ -573,11 +627,40 @@ function completeQuiz(payload: { product: string; batch: string; qrId: string; q
 }
 
 function QuizResultPage({ result, go }: { result: { reward: Reward | null; points: number; message: string } | null; go: (path: string) => void }) {
+  const [revealing, setRevealing] = useState(true)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setRevealing(false), 1600)
+    return () => window.clearTimeout(timer)
+  }, [])
   if (!result) return <div className="page narrow"><Card><h1>Nenhum resultado recente.</h1><Button onClick={() => go('/')}>Voltar ao site</Button></Card></div>
   const reward = result.reward
-  const title = reward?.type === 'voucher_50' ? 'Uau! Você ganhou um voucher de R$50 da Gema Vita 🎉' : reward?.type === 'free_omelete' ? 'Parabéns! Você ganhou 1 omelete completo Gema Vita 🥙' : 'Hoje não veio prêmio, mas sua participação valeu muito 💛'
+  const title = reward?.type === 'voucher_50' ? 'Uau! Você ganhou um voucher de R$50 da Gema Vita' : reward?.type === 'free_omelete' ? 'Parabéns! Você ganhou 1 omelete completo Gema Vita' : 'Hoje não veio prêmio, mas sua participação valeu muito'
   return (
-    <div className="page narrow result-page"><Card><span className="reward-badge">+{result.points} pontos</span><h1>{title}</h1><p>{result.message}</p>{reward && <div className="code-box"><small>Código do prêmio</small><strong>{reward.code}</strong><span>{reward.expiresAt ? `Validade: ${new Date(reward.expiresAt).toLocaleString('pt-BR')}` : 'Voucher manual validado pelo WhatsApp'}</span></div>}<div className="actions vertical">{reward && <a className="link-button reward" href={whatsAppLink(`Olá! Ganhei uma vantagem Gema Vita. Código: ${reward.code}. Meu nome é ${reward.customerName}.`)} target="_blank" rel="noreferrer">Resgatar pelo WhatsApp</a>}<Button onClick={() => go('/cliente')}>Ver minha fidelidade</Button><Button variant="secondary" onClick={() => go('/')}>Voltar para o site</Button></div></Card></div>
+    <div className="page narrow result-page">
+      {revealing ? (
+        <Card className="result-reveal-card">
+          <div className="result-spinner"><Sparkles size={40} strokeWidth={1.8} /></div>
+          <h2>Sorteando sua vantagem...</h2>
+          <p>+20 pontos de fidelidade garantidos. Agora vamos ver se você ganhou um brinde hoje!</p>
+        </Card>
+      ) : (
+        <Card>
+          <span className="reward-badge"><Gift size={16} strokeWidth={2.5} /> +{result.points} pontos</span>
+          <h1>{title}</h1>
+          <p>{result.message}</p>
+          <div className="result-info">
+            <span><Sparkles size={14} strokeWidth={2.4} /> +20 pontos de fidelidade</span>
+            <span><Gift size={14} strokeWidth={2.4} /> Chance de omelete grátis da sua preferência</span>
+          </div>
+          {reward && <div className="code-box"><small>Código do prêmio</small><strong>{reward.code}</strong><span>{reward.expiresAt ? `Validade: ${new Date(reward.expiresAt).toLocaleString('pt-BR')}` : 'Voucher manual validado pelo WhatsApp'}</span></div>}
+          <div className="actions vertical">
+            {reward && <a className="link-button reward" href={whatsAppLink(`Olá! Ganhei uma vantagem Gema Vita. Código: ${reward.code}. Meu nome é ${reward.customerName}.`)} target="_blank" rel="noreferrer">Resgatar pelo WhatsApp</a>}
+            <Button onClick={() => go('/cliente')}>Ver minha fidelidade</Button>
+            <Button variant="secondary" onClick={() => go('/')}>Voltar para o site</Button>
+          </div>
+        </Card>
+      )}
+    </div>
   )
 }
 
@@ -592,7 +675,7 @@ function AdminPage({ store, update, reset, path }: { store: Store; update: (reci
   const metrics = getMetrics(store)
   return (
     <div className="admin-shell">
-      <aside><div className="brand admin-brand"><img className="brand-logo" src={gemaVitaLogo} alt="" /><span><strong>Admin</strong><small>operação simples</small></span></div><a href="/admin">Dashboard</a><a href="/admin/lotes">Lotes e QR</a><a href="/admin/saidas">Saídas</a><a href="/admin/premios">Prêmios</a><a href="/admin/analytics">Analytics</a><a href="/admin/ranking">Ranking</a><button onClick={reset}>Reset demo</button></aside>
+      <aside><div className="brand admin-brand"><span><strong>Admin</strong><small>operação simples</small></span></div><a href="/admin">Dashboard</a><a href="/admin/lotes">Lotes e QR</a><a href="/admin/saidas">Saídas</a><a href="/admin/premios">Prêmios</a><a href="/admin/analytics">Analytics</a><a href="/admin/ranking">Ranking</a><button onClick={reset}>Reset demo</button></aside>
       <section className="admin-content">
         {path === '/admin/lotes' ? <AdminBatches store={store} update={update} /> : path === '/admin/saidas' ? <AdminOutputs store={store} update={update} /> : path === '/admin/premios' ? <AdminRewards store={store} update={update} /> : path === '/admin/analytics' ? <AdminAnalytics store={store} /> : path === '/admin/ranking' ? <AdminRanking store={store} /> : <AdminDashboard store={store} metrics={metrics} />}
       </section>
